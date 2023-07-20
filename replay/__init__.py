@@ -2,9 +2,9 @@ import bpy
 from . import properties
 
 bl_info = {
-	"name": "Bandu-gta",
+	"name": "Replay Manager",
 	"author": "Simon Rofstad",
-	"version": (1, 0),
+	"version": (2, 0),
 	"blender": (3, 0, 0),
 	"location": "View3D > Sidebar > Replay Manager",
 	"description": "Manage .rep files from the classic Grand Theft Auto games",

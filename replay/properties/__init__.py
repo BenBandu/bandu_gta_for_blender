@@ -1,4 +1,4 @@
-from replay.properties.blocks import *
+from .blocks import *
 from .manager import Manager
 from .replay import Replay
 from .frame import Frame
