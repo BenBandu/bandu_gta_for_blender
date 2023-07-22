@@ -15,19 +15,19 @@ class Weather(bpy.types.PropertyGroup):
 
 	old: bpy.props.EnumProperty(
 		items=TYPES,
-		name="Old weather",
+		name="Previous Weather",
 		description="Weather we are interpolating from"
 	)
 
 	new: bpy.props.EnumProperty(
 		items=TYPES,
-		name="New weather",
+		name="Next Weather",
 		description="Weather we are interpolating to"
 	)
 
 	interpolation: bpy.props.FloatProperty(
-		name="Weather Interpolation",
-		description="Interpolation value between weathers",
+		name="Interpolation",
+		description="Weather interpolation (0 = 100% Previous Weather, 1 = 100% Next Weather)",
 		max=1.0,
-		min=0.0
+		min=0.0,
 	)

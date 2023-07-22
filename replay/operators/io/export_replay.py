@@ -3,9 +3,9 @@ import bpy_extras
 
 
 # noinspection PyPep8Naming
-class REPLAY_MANAGER_OT_ExportReplay(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
+class RM_OT_ExportReplay(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
 
-	bl_idname = "replay_list.export_item"
+	bl_idname = "rm_ops.export_replay"
 	bl_label = "GTA Replay (.rep)"
 
 	filename_ext = ".rep"
@@ -13,7 +13,7 @@ class REPLAY_MANAGER_OT_ExportReplay(bpy.types.Operator, bpy_extras.io_utils.Exp
 
 	def execute(self, context):
 		manager = context.scene.replay_manager
-		bl_replay = manager.current
+		bl_replay = manager.active_replay
 
 		# TODO: Implement
 

@@ -3,16 +3,28 @@ import bpy_extras
 
 
 # noinspection PyPep8Naming
-class REPLAY_MANAGER_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
-	bl_idname = "replay_list.import_item"
+	bl_idname = "rm_ops.import_replay"
 	bl_label = "GTA Replay (.rep)"
 
 	filename_ext = ".rep"
 	filter_glob: bpy.props.StringProperty(default="*.rep", options={"HIDDEN"})
 
+	param_current_frame = bpy.props.BoolProperty(
+		default=False,
+		name="Current Frame",
+		description="Imports the replay starting at the current frame",
+		options={"ANIMATABLE"}
+	)
+
 	def execute(self, context):
-		manager = context.scene.replay_manager
+		scene = context.scene
+		manager = scene.replay_manager
+		bl_replay = manager.replays.add()
+
+		scene.frame_start = 0
+		scene.frame_set(0)
 
 		# TODO: Implement
 

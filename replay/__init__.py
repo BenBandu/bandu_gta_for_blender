@@ -2,6 +2,7 @@ import bpy
 from . import lists
 from . import properties
 from . import operators
+from . import panels
 
 bl_info = {
 	"name": "Replay Manager",
@@ -13,12 +14,12 @@ bl_info = {
 	"category": "bandu-gta"
 }
 
-classes = lists.classes + properties.classes + operators.classes
+classes = properties.classes + lists.classes + panels.classes + operators.classes
+f_register, f_unregister = bpy.utils.register_classes_factory(classes)
 
 
 def register():
-	for cls in classes:
-		bpy.utils.register_class(cls)
+	f_register()
 
 	bpy.types.Scene.replay_manager = bpy.props.PointerProperty(type=properties.Manager)
 	bpy.types.TOPBAR_MT_file_import.append(operators.menu_import)
@@ -30,5 +31,4 @@ def unregister():
 	bpy.types.TOPBAR_MT_file_import.remove(operators.menu_import)
 	bpy.types.TOPBAR_MT_file_export.remove(operators.menu_export)
 
-	for cls in classes:
-		bpy.utils.unregister_class(cls)
+	f_unregister()

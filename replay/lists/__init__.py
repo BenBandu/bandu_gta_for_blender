@@ -1,5 +1,5 @@
-from .replay_list import REPLAY_UL_LIST
+from .replay_list import RM_UL_REPLAY_LIST
 
 classes = [
-	REPLAY_UL_LIST,
+	RM_UL_REPLAY_LIST,
 ]
