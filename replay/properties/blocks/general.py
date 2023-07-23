@@ -2,7 +2,8 @@ import bpy
 
 
 class General(bpy.types.PropertyGroup):
-	camera_filter = lambda self, obj: obj.type == 'CAMERA'
+	camera_filter = lambda self, obj: obj.type == "CAMERA"
+	target_filter = lambda self, obj: obj.type != "CAMERA"
 
 	camera: bpy.props.PointerProperty(
 		type=bpy.types.Object,
@@ -10,7 +11,8 @@ class General(bpy.types.PropertyGroup):
 		poll=camera_filter
 	)
 
-	player: bpy.props.PointerProperty(
+	target: bpy.props.PointerProperty(
 		type=bpy.types.Object,
-		description="The point that the camera orbits around when playing back the replay in game (Usually the player)"
+		description="The point that the camera orbits around when playing back the replay in game (Usually the player)",
+		poll=target_filter
 	)

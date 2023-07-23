@@ -13,15 +13,16 @@ class RM_PT_Replay(bpy.types.Panel):
 	def draw(self, context):
 		replay = context.scene.replay_manager.active_replay
 
-		self.layout.prop(replay, "name")
+		row = self.layout.row()
+		row.prop(replay, "name")
+
+		row = self.layout.row()
+		row.prop(replay, "offset")
 
 		self.layout.separator()
 
-		self.layout.prop(replay, "offset")
-
 		row = self.layout.row()
-		row.scale_y = 2.0
-		self.layout.operator('rm_ops.export_replay', text='Export Replay')
+		row.operator('rm_ops.export_replay', text='Export Replay')
 
 	@classmethod
 	def poll(cls, context):

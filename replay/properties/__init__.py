@@ -7,6 +7,8 @@ classes = [
 	General,
 	Clock,
 	Weather,
+	Ped,
+	Vehicle,
 	Frame,
 	Replay,
 	Manager
