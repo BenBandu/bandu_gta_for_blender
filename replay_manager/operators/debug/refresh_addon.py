@@ -1,6 +1,6 @@
 import bpy
 import os
-from shutil import copytree, rmtree
+from shutil import copytree, copyfile, rmtree
 
 
 # noinspection PyPep8Naming
@@ -11,12 +11,7 @@ class RM_OT_RefreshAddon(bpy.types.Operator):
 
 	def execute(self, context):
 		# Copy source to blender scripts
-		from_path = 'K:\\Dev\\bandu-gta-for-blender\\replay'
-		to_path = 'C:\\Users\\Simon\\AppData\\Roaming\\Blender Foundation\\Blender\\3.6\\scripts\\addons\\replay_manager'
-		if os.path.exists(to_path):
-			rmtree(to_path)
-
-		copytree(from_path, to_path)
+		self.update_directory()
 
 		# restart blender, code snippet from https://github.com/LuxCoreRender/BlendLuxCore/blob/d435660c798451c0de3f023d07b0721ddbeccdf5/operators/debug.py#L28
 		blender_exe = bpy.app.binary_path
@@ -29,3 +24,14 @@ bpy.ops.wm.recover_last_session()
 		subprocess.Popen([blender_exe, "-con", "--python-expr", execute.rstrip()])
 		bpy.ops.wm.quit_blender()
 		return {"FINISHED"}
+
+	def update_directory(self):
+		to_path = 'C:\\Users\\Simon\\AppData\\Roaming\\Blender Foundation\\Blender\\3.6\\scripts\\addons\\bandu_gta_for_blender'
+
+		if os.path.exists(to_path):
+			rmtree(to_path, ignore_errors=True)
+			os.mkdir(to_path)
+
+		copytree('replay_manager', to_path + "\\replay_manager")
+		copytree('bandu_gta', to_path + "\\bandu_gta")
+		copyfile('__init__.py', to_path + "\\__init__.py")

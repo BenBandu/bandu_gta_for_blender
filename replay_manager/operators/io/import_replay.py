@@ -1,5 +1,6 @@
 import bpy
 import bpy_extras
+from bandu_gta.files.replay import Replay
 
 
 # noinspection PyPep8Naming
