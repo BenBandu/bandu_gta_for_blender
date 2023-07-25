@@ -5,6 +5,8 @@ from .frame import Frame
 class Replay(bpy.types.PropertyGroup):
 
 	name: bpy.props.StringProperty(name="Name", description="Name of the replay", default="replay")
+	game: bpy.props.StringProperty(name="Game", description="Which game the replay comes from")
+
 	frames: bpy.props.CollectionProperty(type=Frame, name="Frame")
 	offset: bpy.props.IntProperty(name="Offset", description="Offset the entire replay in the timeline")
 

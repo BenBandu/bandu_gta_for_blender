@@ -34,4 +34,6 @@ bpy.ops.wm.recover_last_session()
 
 		copytree('replay_manager', to_path + "\\replay_manager")
 		copytree('bandu_gta', to_path + "\\bandu_gta")
-		copyfile('__init__.py', to_path + "\\__init__.py")
+		for filename in os.listdir('.'):
+			if filename.endswith('.py'):
+				copyfile(filename, to_path + "\\" + filename)
