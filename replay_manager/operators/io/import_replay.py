@@ -1,6 +1,6 @@
 import bpy
 import bpy_extras
-from bandu_gta.files.replay import Replay
+from ....bandu_gta.files.replay import Replay
 
 
 # noinspection PyPep8Naming
@@ -34,6 +34,10 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		scene = context.scene
 		manager = scene.replay_manager
 		bl_replay = manager.replays.add()
+		bg_replay = Replay.create_from_file(self.filepath)
+
+		bl_replay.name = self.filepath.split("\\")[-1]
+		bl_replay.game = self.get_game_name_from_version(bg_replay.get_version())
 
 		scene.render.fps = 30
 
@@ -52,6 +56,16 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		# TODO: Implement
 
 		return {'FINISHED'}
+
+	def get_game_name_from_version(self, version):
+		games = {
+			1: "Grand Theft Auto III",
+			2: "Grand Theft Auto: Vice City",
+			3: "Grand Theft Auto: San Andreas",
+			4: "Grand Theft Auto: San Andreas - Steam Version"
+		}
+
+		return games[version]
 
 	def create_collection(self, name):
 		collection = bpy.data.collections.new(name)

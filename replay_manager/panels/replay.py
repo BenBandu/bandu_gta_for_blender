@@ -15,6 +15,7 @@ class RM_PT_Replay(bpy.types.Panel):
 
 		row = self.layout.row()
 		row.prop(replay, "name")
+		row.label(replay.game)
 
 		row = self.layout.row()
 		row.prop(replay, "offset")
