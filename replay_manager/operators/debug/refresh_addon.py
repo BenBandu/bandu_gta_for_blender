@@ -26,14 +26,15 @@ bpy.ops.wm.recover_last_session()
 		return {"FINISHED"}
 
 	def update_directory(self):
-		to_path = 'C:\\Users\\Simon\\AppData\\Roaming\\Blender Foundation\\Blender\\3.6\\scripts\\addons\\bandu_gta_for_blender'
+		to_path = 'C:\\Users\\Simon\\AppData\\Roaming\\Blender Foundation\\Blender\\3.6\\scripts\\addons\\bandu_gta_for_blender\\'
+		from_path = 'K:\\Dev\\bandu-gta-for-blender\\'
 
 		if os.path.exists(to_path):
 			rmtree(to_path, ignore_errors=True)
 			os.mkdir(to_path)
 
-		copytree('replay_manager', to_path + "\\replay_manager")
-		copytree('bandu_gta', to_path + "\\bandu_gta")
-		for filename in os.listdir('.'):
-			if filename.endswith('.py'):
-				copyfile(filename, to_path + "\\" + filename)
+		copytree(from_path + 'replay_manager', to_path + "replay_manager")
+		copytree(from_path + 'bandu_gta', to_path + "bandu_gta")
+		for filename in os.listdir(from_path):
+			if filename.endswith('.py') and not filename.startswith('update'):
+				copyfile(from_path + filename, to_path + filename)

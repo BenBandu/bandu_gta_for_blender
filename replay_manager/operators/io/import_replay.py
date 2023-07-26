@@ -24,6 +24,12 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		description="Match the playback frame range to the replays frame range"
 	)
 
+	match_framerate: bpy.props.BoolProperty(
+		default=False,
+		name="Match scene framerate",
+		description="Match the scenes framerate with the playback rate of the replay in game\nGTA III/Vice City: 30fps\nSan Andreas: 25fps"
+	)
+
 	offset_to_current_frame: bpy.props.BoolProperty(
 		default=False,
 		name="Offset to current frame",
@@ -33,13 +39,21 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 	def execute(self, context):
 		scene = context.scene
 		manager = scene.replay_manager
-		bl_replay = manager.replays.add()
+
+		# Read file
 		bg_replay = Replay.create_from_file(self.filepath)
 
-		bl_replay.name = self.filepath.split("\\")[-1]
-		bl_replay.game = self.get_game_name_from_version(bg_replay.get_version())
+		# Add new replay to manager
+		bl_replay = manager.replays.add()
+		manager.index += 1
 
-		scene.render.fps = 30
+		# Set basic replay information
+		bl_replay.name = self.filepath.split("\\")[-1]
+		bl_replay.game = self.get_game_name(bg_replay.get_version())
+
+		# Handle import settings
+		if self.match_framerate:
+			scene.render.fps = 25 if bg_replay.get_version() >= Replay.VERSION_SAN_ANDREAS else 30
 
 		if self.offset_to_current_frame:
 			bl_replay.offset = scene.frame_current
@@ -49,7 +63,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 		if self.match_range:
 			scene.frame_start = bl_replay.offset
-			scene.frame_end = len(bl_replay.frames)
+			scene.frame_end = len(bg_replay.get_frames())
 
 		self.create_collection(bl_replay.name)
 
@@ -57,15 +71,17 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 		return {'FINISHED'}
 
-	def get_game_name_from_version(self, version):
-		games = {
-			1: "Grand Theft Auto III",
-			2: "Grand Theft Auto: Vice City",
-			3: "Grand Theft Auto: San Andreas",
-			4: "Grand Theft Auto: San Andreas - Steam Version"
-		}
-
-		return games[version]
+	def get_game_name(self, version):
+		if version == Replay.VERSION_III:
+			return "GTA III"
+		elif version == Replay.VERSION_VICE_CITY:
+			return "GTA: Vice City"
+		elif version == Replay.VERSION_SAN_ANDREAS:
+			return "GTA: San Andreas"
+		elif version == Replay.VERSION_SAN_ANDREAS_STEAM:
+			return "GTA: San Andreas (Steam)"
+		else:
+			return "Unknown version"
 
 	def create_collection(self, name):
 		collection = bpy.data.collections.new(name)

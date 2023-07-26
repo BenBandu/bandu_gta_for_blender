@@ -14,8 +14,16 @@ class RM_PT_Replay(bpy.types.Panel):
 		replay = context.scene.replay_manager.active_replay
 
 		row = self.layout.row()
-		row.prop(replay, "name")
-		row.label(replay.game)
+		row.scale_y = 0.5
+		row.alignment = "CENTER"
+		row.label(text=replay.name)
+
+		row = self.layout.row()
+		row.scale_y = 0.5
+		row.alignment = "CENTER"
+		row.label(text=replay.game)
+
+		self.layout.separator()
 
 		row = self.layout.row()
 		row.prop(replay, "offset")
