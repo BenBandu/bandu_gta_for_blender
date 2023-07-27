@@ -8,67 +8,58 @@ class RM_PT_Frame(bpy.types.Panel):
 	bl_region_type = "UI"
 	bl_category = "Replay Manager"
 	bl_idname = "RM_PT_Frame"
+	bl_parent_id = "RM_PT_Replay"
 	bl_label = "Frame Data"
 
 	def draw(self, context):
 		manager = context.scene.replay_manager
 		replay = manager.active_replay
-		frame = replay.active_frame
-
-		if frame is None:
-			self.multiline_label(context, "No frame data exists on the current frame")
-			self.layout.separator()
-			self.layout.operator("rm_ops.add_frame", text="Add frame(s)")
-			return
 
 		row = self.layout.row()
-		row.prop(frame.general, "camera", text="Camera", icon="CAMERA_DATA")
+		row.prop(replay.general, "camera", text="Camera", icon="CAMERA_DATA")
 
 		row = self.layout.row()
-		row.prop(frame.general, "target", text="Target", icon="EMPTY_AXIS")
+		row.prop(replay.general, "target", text="Target", icon="EMPTY_AXIS")
 
 		self.layout.separator()
 
 		row = self.layout.split(factor=0.75)
 		col = row.column()
-		col.prop(frame.clock, "time_of_day")
+		col.prop(replay.clock, "time_of_day")
 
 		col = row.column()
-		hours = (frame.clock.time_of_day // 60) % 24
-		minutes = frame.clock.time_of_day % 60
+		hours = (replay.clock.time_of_day // 60) % 24
+		minutes = replay.clock.time_of_day % 60
 		col.label(text="{:02d}:{:02d}".format(hours, minutes))
 
 		self.layout.separator()
 
 		row = self.layout.row()
-		row.prop(frame.weather, "old", text='')
-		row.prop(frame.weather, "new", text='')
+		row.prop(replay.weather, "old", text='')
+		row.prop(replay.weather, "new", text='')
 
 		row = self.layout.row()
-		row.prop(frame.weather, "interpolation", slider=True)
-
-		self.layout.separator()
+		row.prop(replay.weather, "interpolation", slider=True)
 
 		enabled_peds = False
-		for ped in frame.peds:
+		for ped in replay.peds:
 			if ped.enabled:
 				enabled_peds = True
 				break
 
 		enabled_vehicles = False
-		for vehicle in frame.vehicles:
+		for vehicle in replay.vehicles:
 			if vehicle.enabled:
 				enabled_vehicles = True
 				break
 
 		if enabled_peds:
-			self.layout.template_list("RM_UL_PED_LIST", "ped_list", manager, "replays", manager, "index")
-
-		if enabled_peds and enabled_vehicles:
 			self.layout.separator()
+			self.layout.template_list("RM_UL_PED_LIST", "ped_list", replay, "peds", replay, "ped_index")
 
 		if enabled_vehicles:
-			self.layout.template_list("RM_UL_VEHICLE_LIST", "vehicle_list", manager, "replays", manager, "index")
+			self.layout.separator()
+			self.layout.template_list("RM_UL_VEHICLE_LIST", "vehicle_list", replay, "vehicles", replay, "vehicle_index")
 
 	def multiline_label(self, context, text):
 		wrapper = textwrap.TextWrapper(context.region.width // 7)

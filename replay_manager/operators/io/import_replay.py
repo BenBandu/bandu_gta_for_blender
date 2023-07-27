@@ -1,5 +1,7 @@
 import bpy
 import bpy_extras
+import math
+import mathutils
 from ....bandu_gta.files.replay import Replay
 
 
@@ -65,11 +67,71 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 			scene.frame_start = bl_replay.offset
 			scene.frame_end = len(bg_replay.get_frames())
 
-		self.create_collection(bl_replay.name)
+		collection = self.create_collection(bl_replay.name)
+		bl_replay.general.camera = collection.objects[0]
+		bl_replay.general.target = collection.objects[1]
 
-		# TODO: Implement
+		bpy.context.view_layer.objects.active = bl_replay.general.target
+		bpy.ops.view3d.localview(frame_selected=True)
+
+		frameblock = bg_replay.blocks.ReplayBlock
+		for frame_index, frame in enumerate(bg_replay.get_frames()):
+			bl_frame_index = bl_replay.offset + frame_index
+
+			# General
+			general = frame.get_block(frameblock.TYPE_GENERAL)
+			bl_replay.general.camera.matrix_world = self.matrix_bg_to_bl(general.camera)
+			bl_replay.general.camera.scale *= -1
+			bl_replay.general.camera.keyframe_insert(data_path="location",       frame=frame_index)
+			bl_replay.general.camera.keyframe_insert(data_path="rotation_euler", frame=frame_index)
+			bl_replay.general.camera.keyframe_insert(data_path="scale",          frame=frame_index)
+
+			bl_replay.general.target.location = general.player.as_list()
+			bl_replay.general.target.keyframe_insert(data_path="location", frame=frame_index)
+
+			# Clock
+			clock = frame.get_block(frameblock.TYPE_CLOCK)
+			bl_replay.clock.time_of_day = clock.hours * 60 + clock.minutes
+			bl_replay.clock.keyframe_insert(data_path="time_of_day", frame=bl_frame_index)
+
+			# Weather
+			# TODO: Figure out the possible weather for each game
+
+			enabled_vehicles = {}
+			for vehicle_block in frameblock.get_vehicles_types():
+				vehicle_blocks = frame.get_block(vehicle_block)
+				if vehicle_blocks is None:
+					continue
+
+				for bg_vehicle in vehicle_blocks:
+					if len(bl_replay.vehicles) > bg_vehicle.index:
+						bl_vehicle = bl_replay.vehicles[bg_vehicle.index]
+					else:
+						bl_vehicle = bl_replay.vehicles.add()
+
+					bl_vehicle.index = bg_vehicle.index
+					enabled_vehicles[bg_vehicle.index] = bg_vehicle
+
+			for vehicle in bl_replay.vehicles:
+				bl_vehicle = enabled_vehicles.get(vehicle.index, None)
+				if bl_vehicle is None:
+					vehicle.enabled = False
+				else:
+					vehicle.enabled = True
+
+				vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
+
+		if len(bl_replay.vehicles) > 0:
+			bl_replay.vehicle_index += 1
 
 		return {'FINISHED'}
+
+	def matrix_bg_to_bl(self, camera):
+		matrix = mathutils.Matrix(camera.as_list(True))
+		convert = bpy_extras.io_utils.axis_conversion(from_forward="Z", from_up="-Y", to_forward="Y", to_up="Z").to_4x4()
+		final = matrix @ convert
+		final.translation = matrix.to_translation()
+		return final
 
 	def get_game_name(self, version):
 		if version == Replay.VERSION_III:
@@ -89,6 +151,8 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 		collection.objects.link(self.create_camera(name))
 		collection.objects.link(self.create_empty(name))
+
+		return collection
 
 	def create_camera(self, name):
 		camera_data = bpy.data.cameras.new(name="camera")

@@ -12,7 +12,7 @@ class RM_UL_VEHICLE_LIST(bpy.types.UIList):
 			return
 
 		if self.layout_type in {"DEFAULT", "COMPACT"}:
-			layout.label(text=vehicle.model, icon=custom_icon)
+			layout.label(text=str(vehicle.model), icon=custom_icon)
 		elif self.layout_type in {"GRID"}:
 			layout.alignment = "CENTER"
 			layout.label(text="", icon=custom_icon)
