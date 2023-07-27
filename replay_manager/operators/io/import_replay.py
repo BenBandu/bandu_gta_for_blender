@@ -74,6 +74,14 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		bpy.context.view_layer.objects.active = bl_replay.general.target
 		bpy.ops.view3d.localview(frame_selected=True)
 
+		# Max Vehicles in SA (I think)
+		for i in range(110):
+			bl_replay.vehicles.add()
+
+		# Max Peds in SA (I think)
+		for i in range(140):
+			bl_replay.peds.add()
+
 		frameblock = bg_replay.blocks.ReplayBlock
 		for frame_index, frame in enumerate(bg_replay.get_frames()):
 			bl_frame_index = bl_replay.offset + frame_index
@@ -97,32 +105,29 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 			# Weather
 			# TODO: Figure out the possible weather for each game
 
-			enabled_vehicles = {}
 			for vehicle_block in frameblock.get_vehicles_types():
 				vehicle_blocks = frame.get_block(vehicle_block)
 				if vehicle_blocks is None:
 					continue
 
 				for bg_vehicle in vehicle_blocks:
-					if len(bl_replay.vehicles) > bg_vehicle.index:
-						bl_vehicle = bl_replay.vehicles[bg_vehicle.index]
-					else:
-						bl_vehicle = bl_replay.vehicles.add()
+					bl_vehicle = bl_replay.vehicles[bg_vehicle.index]
+					if bl_vehicle is None:
+						continue
 
 					bl_vehicle.index = bg_vehicle.index
-					enabled_vehicles[bg_vehicle.index] = bg_vehicle
+					bl_vehicle.keyframe_insert(data_path="index", frame=bl_frame_index)
 
-			for vehicle in bl_replay.vehicles:
-				bl_vehicle = enabled_vehicles.get(vehicle.index, None)
-				if bl_vehicle is None:
-					vehicle.enabled = False
-				else:
-					vehicle.enabled = True
+					bl_vehicle.model_id = bg_vehicle.model_id
+					bl_vehicle.keyframe_insert(data_path="model_id", frame=bl_frame_index)
 
-				vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
+					if len(bg_replay.get_frames()) > bl_frame_index:
+						# Always assume the vehicle might be disabled next frame
+						bl_vehicle.enabled = False
+						bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index + 1)
 
-		if len(bl_replay.vehicles) > 0:
-			bl_replay.vehicle_index += 1
+					bl_vehicle.enabled = True
+					bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
 
 		return {'FINISHED'}
 

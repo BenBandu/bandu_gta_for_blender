@@ -13,7 +13,12 @@ class RM_PT_Vehicle(bpy.types.Panel):
 	def draw(self, context):
 		manager = context.scene.replay_manager
 		replay = manager.active_replay
-		vehicle = replay.active_vehicle()
+		vehicle = replay.active_vehicle
+
+		row = self.layout.row()
+		row.scale_y = 0.5
+		row.alignment = "CENTER"
+		row.label(text=vehicle.model)
 
 	@classmethod
 	def poll(cls, context):

@@ -59,6 +59,7 @@ class RM_PT_Frame(bpy.types.Panel):
 
 		if enabled_vehicles:
 			self.layout.separator()
+			self.layout.label(text="Vehicles")
 			self.layout.template_list("RM_UL_VEHICLE_LIST", "vehicle_list", replay, "vehicles", replay, "vehicle_index")
 
 	def multiline_label(self, context, text):

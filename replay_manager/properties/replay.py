@@ -42,7 +42,7 @@ class Replay(bpy.types.PropertyGroup):
 
 	@property
 	def active_vehicle(self):
-		if len(self.vehicles) > -1:
+		if len(self.vehicles) == 0:
 			return None
 
 		vehicle = self.vehicles[self.vehicle_index]

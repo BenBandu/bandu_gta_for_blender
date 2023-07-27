@@ -4,7 +4,7 @@ import bpy
 class Vehicle(bpy.types.PropertyGroup):
 	models = []
 
-	enabled: bpy.props.BoolProperty(name="Enabled", description="Is this vehicle in the current frame?")
+	enabled: bpy.props.BoolProperty(name="Enabled", description="Is this vehicle in the current frame?", default=False)
 	index: bpy.props.IntProperty(name="Index", description="Vehicles position in the vehicle array")
 
 	model_id: bpy.props.IntProperty(name="Model Id", description="Id of the model used for this vehicle")
@@ -15,4 +15,4 @@ class Vehicle(bpy.types.PropertyGroup):
 		if self.models:
 			return self.model_name
 
-		return self.model_id
+		return str(self.model_id)
