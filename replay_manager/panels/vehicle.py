@@ -18,7 +18,19 @@ class RM_PT_Vehicle(bpy.types.Panel):
 		row = self.layout.row()
 		row.scale_y = 0.5
 		row.alignment = "CENTER"
-		row.label(text=vehicle.model)
+		row.label(text="Vehicle: " + vehicle.model)
+
+		self.layout.separator()
+
+		row = self.layout.row()
+		row.prop(replay.general, "target", text="Location", icon="EMPTY_AXIS")
+
+		self.layout.separator()
+
+		#TODO: Enum?
+		row = self.layout.row()
+		row.prop(vehicle, property="primary_color", text="Primary")
+		row.prop(vehicle, property="secondary_color", text="Secondary")
 
 	@classmethod
 	def poll(cls, context):

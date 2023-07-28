@@ -121,13 +121,31 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 					bl_vehicle.model_id = bg_vehicle.model_id
 					bl_vehicle.keyframe_insert(data_path="model_id", frame=bl_frame_index)
 
+					bl_vehicle.primary_color = bg_vehicle.colors.primary
+					bl_vehicle.secondary_color = bg_vehicle.colors.secondary
+
+					if not bl_vehicle.target:
+						empty = self.create_empty(F"{bl_replay.name}.vehicle.{bl_vehicle.index}")
+						collection.objects.link(empty)
+						bl_vehicle.target = empty
+
+					bl_vehicle.target.location = bg_vehicle.matrix.location.as_list()
+					bl_vehicle.target.keyframe_insert(data_path="location", frame=bl_frame_index)
+
 					if len(bg_replay.get_frames()) > bl_frame_index:
 						# Always assume the vehicle might be disabled next frame
 						bl_vehicle.enabled = False
 						bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index + 1)
 
+						# TODO: Maybe link hide_viewport to vehicle.enabled instead of keying them both
+						bl_vehicle.target.hide_viewport = True
+						bl_vehicle.target.keyframe_insert(data_path="hide_viewport", frame=bl_frame_index + 1)
+
 					bl_vehicle.enabled = True
 					bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
+
+					bl_vehicle.target.hide_viewport = False
+					bl_vehicle.target.keyframe_insert(data_path="hide_viewport", frame=bl_frame_index)
 
 		return {'FINISHED'}
 
@@ -155,7 +173,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		bpy.context.scene.collection.children.link(collection)
 
 		collection.objects.link(self.create_camera(name))
-		collection.objects.link(self.create_empty(name))
+		collection.objects.link(self.create_empty(F"{name}.player"))
 
 		return collection
 
@@ -171,7 +189,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 	def create_empty(self, name):
 		empty = bpy.data.objects.new("empty", None)
-		empty.name = name + ".player"
+		empty.name = name
 
 		empty.empty_display_size = 2
 		empty.empty_display_type = "PLAIN_AXES"
