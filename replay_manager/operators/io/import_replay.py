@@ -134,8 +134,12 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 						collection.objects.link(empty)
 						bl_vehicle.target = empty
 
-					bl_vehicle.target.location = bg_vehicle.matrix.location.as_list()
-					bl_vehicle.target.keyframe_insert(data_path="location", frame=bl_frame_index)
+					matrix = bg_vehicle.matrix.decompress()
+					bl_vehicle.target.matrix_world = self.matrix_bg_to_bl(matrix)
+					bl_vehicle.target.scale *= -1
+					bl_vehicle.target.keyframe_insert(data_path="location",       frame=frame_index)
+					bl_vehicle.target.keyframe_insert(data_path="rotation_euler", frame=frame_index)
+					bl_vehicle.target.keyframe_insert(data_path="scale",          frame=frame_index)
 
 					if frame_count > bl_frame_index:
 						bl_vehicle.enabled = False
@@ -144,21 +148,20 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 					bl_vehicle.enabled = True
 					bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
 
-					# Based on a very small sample size of 1, it looks like all vehicles exist in the first frame
-					# So anything we want to do only once should go in here
-					if frame_index == 0:
-						driver = bl_vehicle.target.driver_add("hide_viewport").driver
+		for bl_vehicle in bl_replay.vehicles:
+			if bl_vehicle.target:
+				driver = bl_vehicle.target.driver_add("hide_viewport").driver
 
-						variable = driver.variables.new()
-						variable.type = "SINGLE_PROP"
-						variable.name = "enabled"
+				variable = driver.variables.new()
+				variable.type = "SINGLE_PROP"
+				variable.name = "enabled"
 
-						target = variable.targets[0]
-						target.id_type = "SCENE"
-						target.id = scene
-						target.data_path = bl_vehicle.path_from_id("enabled")
+				target = variable.targets[0]
+				target.id_type = "SCENE"
+				target.id = scene
+				target.data_path = bl_vehicle.path_from_id("enabled")
 
-						driver.expression = "not enabled"
+				driver.expression = "not enabled"
 
 		return {'FINISHED'}
 
