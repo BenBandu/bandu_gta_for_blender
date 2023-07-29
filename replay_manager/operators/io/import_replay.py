@@ -44,6 +44,8 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 		# Read file
 		bg_replay = Replay.create_from_file(self.filepath)
+		frames = bg_replay.get_frames()
+		frame_count = len(frames)
 
 		# Add new replay to manager
 		bl_replay = manager.replays.add()
@@ -65,7 +67,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 		if self.match_range:
 			scene.frame_start = bl_replay.offset
-			scene.frame_end = len(bg_replay.get_frames())
+			scene.frame_end = frame_count
 
 		collection = self.create_collection(bl_replay.name)
 		bl_replay.general.camera = collection.objects[0]
@@ -83,7 +85,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 			bl_replay.peds.add()
 
 		frameblock = bg_replay.blocks.ReplayBlock
-		for frame_index, frame in enumerate(bg_replay.get_frames()):
+		for frame_index, frame in enumerate(frames):
 			bl_frame_index = bl_replay.offset + frame_index
 
 			# General
@@ -122,7 +124,10 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 					bl_vehicle.keyframe_insert(data_path="model_id", frame=bl_frame_index)
 
 					bl_vehicle.primary_color = bg_vehicle.colors.primary
+					bl_vehicle.keyframe_insert(data_path="primary_color", frame=bl_frame_index)
+
 					bl_vehicle.secondary_color = bg_vehicle.colors.secondary
+					bl_vehicle.keyframe_insert(data_path="secondary_color", frame=bl_frame_index)
 
 					if not bl_vehicle.target:
 						empty = self.create_empty(F"{bl_replay.name}.vehicle.{bl_vehicle.index}")
@@ -132,20 +137,28 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 					bl_vehicle.target.location = bg_vehicle.matrix.location.as_list()
 					bl_vehicle.target.keyframe_insert(data_path="location", frame=bl_frame_index)
 
-					if len(bg_replay.get_frames()) > bl_frame_index:
-						# Always assume the vehicle might be disabled next frame
+					if frame_count > bl_frame_index:
 						bl_vehicle.enabled = False
 						bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index + 1)
-
-						# TODO: Maybe link hide_viewport to vehicle.enabled instead of keying them both
-						bl_vehicle.target.hide_viewport = True
-						bl_vehicle.target.keyframe_insert(data_path="hide_viewport", frame=bl_frame_index + 1)
 
 					bl_vehicle.enabled = True
 					bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
 
-					bl_vehicle.target.hide_viewport = False
-					bl_vehicle.target.keyframe_insert(data_path="hide_viewport", frame=bl_frame_index)
+					# Based on a very small sample size of 1, it looks like all vehicles exist in the first frame
+					# So anything we want to do only once should go in here
+					if frame_index == 0:
+						driver = bl_vehicle.target.driver_add("hide_viewport").driver
+
+						variable = driver.variables.new()
+						variable.type = "SINGLE_PROP"
+						variable.name = "enabled"
+
+						target = variable.targets[0]
+						target.id_type = "SCENE"
+						target.id = scene
+						target.data_path = bl_vehicle.path_from_id("enabled")
+
+						driver.expression = "not enabled"
 
 		return {'FINISHED'}
 
@@ -173,7 +186,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		bpy.context.scene.collection.children.link(collection)
 
 		collection.objects.link(self.create_camera(name))
-		collection.objects.link(self.create_empty(F"{name}.player"))
+		collection.objects.link(self.create_empty(F"{name}.target"))
 
 		return collection
 
