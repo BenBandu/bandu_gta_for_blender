@@ -7,7 +7,6 @@ class Replay(bpy.types.PropertyGroup):
 	# INFO #
 	name: bpy.props.StringProperty(name="Name", description="Name of the replay", default="replay")
 	version: bpy.props.IntProperty(name="Version", description="Game ID")
-	game: bpy.props.StringProperty(name="Game", description="Which game the replay comes from")
 
 	# BLENDER SETTINGS #
 	offset: bpy.props.IntProperty(name="Offset", description="Offset the entire replay in the timeline")
