@@ -39,7 +39,7 @@ class RM_PT_Frame(bpy.types.Panel):
 		row.prop(replay.weather, "new", text='')
 
 		row = self.layout.row()
-		row.prop(replay.weather, "interpolation", slider=True)
+		row.prop(replay.weather, "blend", slider=True)
 
 		enabled_peds = False
 		for ped in replay.peds:

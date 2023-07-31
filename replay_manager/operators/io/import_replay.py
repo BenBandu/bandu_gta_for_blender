@@ -53,7 +53,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
 		# Set basic replay information
 		bl_replay.name = self.filepath.split("\\")[-1]
-		bl_replay.game = self.get_game_name(bg_replay.get_version())
+		bl_replay.version = bg_replay.get_version()
 
 		# Handle import settings
 		if self.match_framerate:
@@ -105,7 +105,17 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 			bl_replay.clock.keyframe_insert(data_path="time_of_day", frame=bl_frame_index)
 
 			# Weather
-			# TODO: Figure out the possible weather for each game
+			weather = frame.get_block(frameblock.TYPE_WEATHER)
+			if len(bl_replay.weather.types) <= 0:
+				bl_replay.weather.set_weather_types(weather.get_weather_types())
+
+			bl_replay.weather.old = str(weather.old)
+			bl_replay.weather.new = str(weather.new)
+			bl_replay.weather.blend = weather.blend
+
+			bl_replay.weather.keyframe_insert(data_path="old", frame=frame_index)
+			bl_replay.weather.keyframe_insert(data_path="new", frame=frame_index)
+			bl_replay.weather.keyframe_insert(data_path="blend", frame=frame_index)
 
 			for vehicle_block in frameblock.get_vehicles_types():
 				vehicle_blocks = frame.get_block(vehicle_block)
@@ -171,18 +181,6 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		final = matrix @ convert
 		final.translation = matrix.to_translation()
 		return final
-
-	def get_game_name(self, version):
-		if version == Replay.VERSION_III:
-			return "GTA III"
-		elif version == Replay.VERSION_VICE_CITY:
-			return "GTA: Vice City"
-		elif version == Replay.VERSION_SAN_ANDREAS:
-			return "GTA: San Andreas"
-		elif version == Replay.VERSION_SAN_ANDREAS_STEAM:
-			return "GTA: San Andreas (Steam)"
-		else:
-			return "Unknown version"
 
 	def create_collection(self, name):
 		collection = bpy.data.collections.new(name)

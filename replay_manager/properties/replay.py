@@ -6,6 +6,7 @@ class Replay(bpy.types.PropertyGroup):
 
 	# INFO #
 	name: bpy.props.StringProperty(name="Name", description="Name of the replay", default="replay")
+	version: bpy.props.IntProperty(name="Version", description="Game ID")
 	game: bpy.props.StringProperty(name="Game", description="Which game the replay comes from")
 
 	# BLENDER SETTINGS #
@@ -28,6 +29,19 @@ class Replay(bpy.types.PropertyGroup):
 		name="buffers",
 		description="Contains all the replay data"
 	)
+
+	@property
+	def game(self):
+		if self.version == 1:
+			return "GTA III"
+		elif self.version == 2:
+			return "GTA: Vice City"
+		elif self.version == 3:
+			return "GTA: San Andreas"
+		elif self.version == 4:
+			return "GTA: San Andreas (Steam)"
+		else:
+			return "Unknown version"
 
 	@property
 	def active_ped(self):

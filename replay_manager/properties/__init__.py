@@ -5,6 +5,7 @@ from .replay import Replay
 classes = [
 	General,
 	Clock,
+	WeatherType,
 	Weather,
 	Ped,
 	Vehicle,
