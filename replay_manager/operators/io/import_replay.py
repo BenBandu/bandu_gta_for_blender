@@ -1,6 +1,6 @@
 import bpy
 import bpy_extras
-import math
+import time
 import mathutils
 from ....bandu_gta.files.replay import Replay
 
@@ -8,7 +8,7 @@ from ....bandu_gta.files.replay import Replay
 # noinspection PyPep8Naming
 class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
-	bl_idname = "rm_ops.import_replay"
+	bl_idname = "replay_manager.import_replay"
 	bl_label = "GTA Replay (.rep)"
 
 	filename_ext = ".rep"
@@ -38,142 +38,222 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		description="Sets the replay offset to the current frame",
 	)
 
+	TIMER_STEP = 0.05
+
+	def __init__(self):
+		self.timer = None
+		self.frame_current = 0
+		self.frame_count = None
+
+		self.replay_data = None
+		self.replay_block = None
+		self.replay_property = None
+		self.replay_collection = None
+
+		self.context = None
+
+	def invoke(self, context, event):
+		return super().invoke(context, event)
+
 	def execute(self, context):
-		scene = context.scene
+		self.context = context
+		self.initialize()
+
+		wm = context.window_manager
+		self.timer = wm.event_timer_add(self.TIMER_STEP, window=context.window)
+		wm.modal_handler_add(self)
+
+		return {"RUNNING_MODAL"}
+
+	def modal(self, context, event):
+		if event.type != "TIMER":
+			return {"RUNNING_MODAL"}
+
+		manager = self.context.scene.replay_manager
+
+		start = time.time()
+		while time.time() - start < self.TIMER_STEP:
+			frame = self.replay_data.get_frames()[self.frame_current]
+			bl_index = self.frame_current + self.replay_property.offset
+
+			manager.loading_status = (self.frame_current / self.frame_count - 1) * 100 + 100
+			manager.loading_message = F"Frame {self.frame_current}/{self.frame_count}"
+
+			self.handle_general_block(frame, bl_index)
+			self.handle_clock_block(frame, bl_index)
+			self.handle_weather_block(frame, bl_index)
+			self.handle_vehicle_blocks(frame, bl_index)
+
+			if self.is_last_frame():
+				self.finalize()
+				return {"FINISHED"}
+			else:
+				self.frame_current += 1
+
+		return {"RUNNING_MODAL"}
+
+	def initialize(self):
+		manager = self.context.scene.replay_manager
+		manager.is_loading = True
+		manager.loading_status = 0
+		manager.loading_message = F"Loading replay data"
+
+		scene = self.context.scene
 		manager = scene.replay_manager
 
 		# Read file
-		bg_replay = Replay.create_from_file(self.filepath)
-		frames = bg_replay.get_frames()
-		frame_count = len(frames)
+		self.replay_data = Replay.create_from_file(self.filepath)
+		self.replay_block = self.replay_data.blocks.ReplayBlock
+		self.frame_count = len(self.replay_data.get_frames())
 
-		# Add new replay to manager
-		bl_replay = manager.replays.add()
+		self.replay_property = manager.replays.add()
 		manager.index += 1
 
-		# Set basic replay information
-		bl_replay.name = self.filepath.split("\\")[-1]
-		bl_replay.version = bg_replay.get_version()
+		self.handle_replay_data()
+		self.handle_import_settings()
 
-		# Handle import settings
+	def finalize(self):
+		self.context.scene.replay_manager.is_loading = False
+		self.context.area.tag_redraw()
+
+	def handle_replay_data(self):
+		self.replay_property.name = self.filepath.split("\\")[-1]
+		self.replay_property.version = self.replay_data.get_version()
+		self.create_collection(self.replay_property.name)
+
+		# Max Vehicles in SA (I think), maybe adjust this based on replay version?
+		for i in range(110):
+			self.replay_property.vehicles.add()
+
+		# Max Peds in SA (I think), do we even care about peds?
+		for i in range(140):
+			self.replay_property.peds.add()
+
+	def handle_import_settings(self):
+		scene = self.context.scene
 		if self.match_framerate:
-			scene.render.fps = 25 if bg_replay.get_version() >= Replay.VERSION_SAN_ANDREAS else 30
+			scene.render.fps = 25 if self.replay_data.get_version() >= Replay.VERSION_SAN_ANDREAS else 30
 
 		if self.offset_to_current_frame:
-			bl_replay.offset = scene.frame_current
+			self.replay_property.offset = scene.frame_current
 
 		if self.goto_start and not self.offset_to_current_frame:
-			scene.frame_set(bl_replay.offset)
+			scene.frame_set(self.replay_property.offset)
 
 		if self.match_range:
-			scene.frame_start = bl_replay.offset
-			scene.frame_end = frame_count
+			scene.frame_start = self.replay_property.offset
+			scene.frame_end = self.frame_count
+			# TODO: Focus on this range, make its own operator perhaps, so we can have a button that does the same?
 
-		collection = self.create_collection(bl_replay.name)
-		bl_replay.general.camera = collection.objects[0]
-		bl_replay.general.target = collection.objects[1]
+	def handle_general_block(self, frame, frame_index):
+		general_data = frame.get_block(self.replay_block.TYPE_GENERAL)
+		general_property = self.replay_property.general
 
-		bpy.context.view_layer.objects.active = bl_replay.general.target
-		bpy.ops.view3d.localview(frame_selected=True)
+		# Camera
+		if not general_property.camera:
+			camera = self.create_camera(F"{self.replay_property.name}.camera")
+			self.replay_collection.objects.link(camera)
+			general_property.camera = camera
 
-		# Max Vehicles in SA (I think)
-		for i in range(110):
-			bl_replay.vehicles.add()
+		general_property.camera.matrix_world = self.matrix_bg_to_bl(general_data.camera)
+		general_property.camera.scale *= -1
+		general_property.camera.keyframe_insert(data_path="location", frame=frame_index)
+		general_property.camera.keyframe_insert(data_path="rotation_euler", frame=frame_index)
+		general_property.camera.keyframe_insert(data_path="scale", frame=frame_index)
 
-		# Max Peds in SA (I think)
-		for i in range(140):
-			bl_replay.peds.add()
+		# Camera Target
+		if not general_property.target:
+			target = self.create_empty(F"{self.replay_property.name}.target")
+			self.replay_collection.objects.link(target)
+			general_property.target = target
 
-		frameblock = bg_replay.blocks.ReplayBlock
-		for frame_index, frame in enumerate(frames):
-			bl_frame_index = bl_replay.offset + frame_index
+		general_property.target.location = general_data.player.as_list()
+		general_property.target.keyframe_insert(data_path="location", frame=frame_index)
 
-			# General
-			general = frame.get_block(frameblock.TYPE_GENERAL)
-			bl_replay.general.camera.matrix_world = self.matrix_bg_to_bl(general.camera)
-			bl_replay.general.camera.scale *= -1
-			bl_replay.general.camera.keyframe_insert(data_path="location",       frame=frame_index)
-			bl_replay.general.camera.keyframe_insert(data_path="rotation_euler", frame=frame_index)
-			bl_replay.general.camera.keyframe_insert(data_path="scale",          frame=frame_index)
+	def handle_clock_block(self, frame, frame_index):
+		clock_data = frame.get_block(self.replay_block.TYPE_CLOCK)
+		clock_property = self.replay_property.clock
 
-			bl_replay.general.target.location = general.player.as_list()
-			bl_replay.general.target.keyframe_insert(data_path="location", frame=frame_index)
+		clock_property.time_of_day = clock_data.hours * 60 + clock_data.minutes
+		clock_property.keyframe_insert(data_path="time_of_day", frame=frame_index)
 
-			# Clock
-			clock = frame.get_block(frameblock.TYPE_CLOCK)
-			bl_replay.clock.time_of_day = clock.hours * 60 + clock.minutes
-			bl_replay.clock.keyframe_insert(data_path="time_of_day", frame=bl_frame_index)
+	def handle_weather_block(self, frame, frame_index):
+		weather_data = frame.get_block(self.replay_block.TYPE_WEATHER)
+		weather_property = self.replay_property.weather
+		if len(weather_property.types) <= 0:
+			weather_property.set_weather_types(weather_data.get_weather_types())
 
-			# Weather
-			weather = frame.get_block(frameblock.TYPE_WEATHER)
-			if len(bl_replay.weather.types) <= 0:
-				bl_replay.weather.set_weather_types(weather.get_weather_types())
+		weather_property.old = str(weather_data.old)
+		weather_property.new = str(weather_data.new)
+		weather_property.blend = weather_data.blend
 
-			bl_replay.weather.old = str(weather.old)
-			bl_replay.weather.new = str(weather.new)
-			bl_replay.weather.blend = weather.blend
+		weather_property.keyframe_insert(data_path="old", frame=frame_index)
+		weather_property.keyframe_insert(data_path="new", frame=frame_index)
+		weather_property.keyframe_insert(data_path="blend", frame=frame_index)
 
-			bl_replay.weather.keyframe_insert(data_path="old", frame=frame_index)
-			bl_replay.weather.keyframe_insert(data_path="new", frame=frame_index)
-			bl_replay.weather.keyframe_insert(data_path="blend", frame=frame_index)
+	def handle_vehicle_blocks(self, frame, frame_index):
+		for vehicle_block in self.replay_block.get_vehicles_types():
+			vehicle_blocks = frame.get_block(vehicle_block)
+			if vehicle_blocks is None:
+				continue
 
-			for vehicle_block in frameblock.get_vehicles_types():
-				vehicle_blocks = frame.get_block(vehicle_block)
-				if vehicle_blocks is None:
+			for vehicle_data in vehicle_blocks:
+				vehicle_property = self.replay_property.vehicles[vehicle_data.index]
+				if vehicle_property is None:
 					continue
 
-				for bg_vehicle in vehicle_blocks:
-					bl_vehicle = bl_replay.vehicles[bg_vehicle.index]
-					if bl_vehicle is None:
-						continue
+				vehicle_property.index = vehicle_data.index
+				vehicle_property.model_id = vehicle_data.model_id
+				vehicle_property.primary_color = vehicle_data.colors.primary
+				vehicle_property.secondary_color = vehicle_data.colors.secondary
 
-					bl_vehicle.index = bg_vehicle.index
-					bl_vehicle.keyframe_insert(data_path="index", frame=bl_frame_index)
+				vehicle_property.keyframe_insert(data_path="index", frame=frame_index)
+				vehicle_property.keyframe_insert(data_path="model_id", frame=frame_index)
+				vehicle_property.keyframe_insert(data_path="primary_color", frame=frame_index)
+				vehicle_property.keyframe_insert(data_path="secondary_color", frame=frame_index)
 
-					bl_vehicle.model_id = bg_vehicle.model_id
-					bl_vehicle.keyframe_insert(data_path="model_id", frame=bl_frame_index)
+				if not vehicle_property.target:
+					empty = self.create_empty(F"{self.replay_property.name}.vehicle.{vehicle_property.index}")
+					self.replay_collection.objects.link(empty)
+					vehicle_property.target = empty
 
-					bl_vehicle.primary_color = bg_vehicle.colors.primary
-					bl_vehicle.keyframe_insert(data_path="primary_color", frame=bl_frame_index)
+				matrix = vehicle_data.matrix.decompress()
+				vehicle_property.target.matrix_world = self.matrix_bg_to_bl(matrix)
+				vehicle_property.target.scale *= -1
+				vehicle_property.target.keyframe_insert(data_path="location",       frame=frame_index)
+				vehicle_property.target.keyframe_insert(data_path="rotation_euler", frame=frame_index)
+				vehicle_property.target.keyframe_insert(data_path="scale",          frame=frame_index)
 
-					bl_vehicle.secondary_color = bg_vehicle.colors.secondary
-					bl_vehicle.keyframe_insert(data_path="secondary_color", frame=bl_frame_index)
+				if self.frame_count > frame_index:
+					vehicle_property.enabled = False
+					vehicle_property.keyframe_insert(data_path="enabled", frame=frame_index + 1)
 
-					if not bl_vehicle.target:
-						empty = self.create_empty(F"{bl_replay.name}.vehicle.{bl_vehicle.index}")
-						collection.objects.link(empty)
-						bl_vehicle.target = empty
+				vehicle_property.enabled = True
+				vehicle_property.keyframe_insert(data_path="enabled", frame=frame_index)
 
-					matrix = bg_vehicle.matrix.decompress()
-					bl_vehicle.target.matrix_world = self.matrix_bg_to_bl(matrix)
-					bl_vehicle.target.scale *= -1
-					bl_vehicle.target.keyframe_insert(data_path="location",       frame=frame_index)
-					bl_vehicle.target.keyframe_insert(data_path="rotation_euler", frame=frame_index)
-					bl_vehicle.target.keyframe_insert(data_path="scale",          frame=frame_index)
+		if self.is_last_frame():
+			# Once we're at the last frame, go through all vehicles with a target and create a
+			# driver that connects the vehicles enabled property to the targets visibility
+			for bl_vehicle in self.replay_property.vehicles:
+				if bl_vehicle.target:
+					driver = bl_vehicle.target.driver_add("hide_viewport").driver
 
-					if frame_count > bl_frame_index:
-						bl_vehicle.enabled = False
-						bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index + 1)
+					variable = driver.variables.new()
+					variable.type = "SINGLE_PROP"
+					variable.name = "enabled"
 
-					bl_vehicle.enabled = True
-					bl_vehicle.keyframe_insert(data_path="enabled", frame=bl_frame_index)
+					target = variable.targets[0]
+					target.id_type = "SCENE"
+					target.id = self.context.scene
+					target.data_path = bl_vehicle.path_from_id("enabled")
 
-		for bl_vehicle in bl_replay.vehicles:
-			if bl_vehicle.target:
-				driver = bl_vehicle.target.driver_add("hide_viewport").driver
+					driver.expression = "not enabled"
 
-				variable = driver.variables.new()
-				variable.type = "SINGLE_PROP"
-				variable.name = "enabled"
+	def is_last_frame(self):
+		return self.frame_current == self.frame_count - 1
 
-				target = variable.targets[0]
-				target.id_type = "SCENE"
-				target.id = scene
-				target.data_path = bl_vehicle.path_from_id("enabled")
-
-				driver.expression = "not enabled"
-
-		return {'FINISHED'}
+	def is_first_frame(self):
+		return self.frame_current == 0
 
 	def matrix_bg_to_bl(self, camera):
 		matrix = mathutils.Matrix(camera.as_list(True))
@@ -185,16 +265,12 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 	def create_collection(self, name):
 		collection = bpy.data.collections.new(name)
 		bpy.context.scene.collection.children.link(collection)
-
-		collection.objects.link(self.create_camera(name))
-		collection.objects.link(self.create_empty(F"{name}.target"))
-
-		return collection
+		self.replay_collection = collection
 
 	def create_camera(self, name):
-		camera_data = bpy.data.cameras.new(name="camera")
-		camera = bpy.data.objects.new("camera", camera_data)
-		camera.name = name + ".camera"
+		camera_data = bpy.data.cameras.new(name=name)
+		camera = bpy.data.objects.new(name, camera_data)
+		camera.name = name
 
 		camera.data.lens_unit = "FOV"
 		camera.data.angle = 1.22173

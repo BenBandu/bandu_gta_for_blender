@@ -5,7 +5,7 @@ from shutil import copytree, copyfile, rmtree
 
 # noinspection PyPep8Naming
 class RM_OT_RefreshAddon(bpy.types.Operator):
-	bl_idname = "rm_ops.refresh_addon"
+	bl_idname = "replay_manager.refresh_addon"
 	bl_label = "Refresh Addon"
 	bl_description = "Copy scripts from source location to blenders add-on location, restart blender and recover last session"
 

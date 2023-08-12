@@ -14,7 +14,10 @@ class RM_PT_Manager(bpy.types.Panel):
 
 		row = self.layout.row()
 		row.scale_y = 2.0
-		row.operator("rm_ops.import_replay", text="Import Replay")
+		if manager.is_loading:
+			row.prop(manager, "loading_status", text=F"{manager.loading_message}", slider=True)
+		else:
+			row.operator("replay_manager.import_replay", text="Import Replay")
 
 		self.layout.separator()
 

@@ -31,7 +31,7 @@ class RM_PT_Replay(bpy.types.Panel):
 		self.layout.separator()
 
 		row = self.layout.row()
-		row.operator('rm_ops.export_replay', text='Export Replay')
+		row.operator('replay_manager.export_replay', text='Export Replay')
 
 	@classmethod
 	def poll(cls, context):

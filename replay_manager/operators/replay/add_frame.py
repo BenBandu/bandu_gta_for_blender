@@ -3,7 +3,7 @@ import bpy
 
 # noinspection PyPep8Naming
 class RM_OT_AddFrame(bpy.types.Operator):
-	bl_idname = 'rm_ops.add_frame'
+	bl_idname = 'replay_manager.add_frame'
 	bl_label = "Add frame"
 
 	def execute(self, context):
