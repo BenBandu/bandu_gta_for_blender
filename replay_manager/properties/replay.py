@@ -24,10 +24,7 @@ class Replay(bpy.types.PropertyGroup):
 	vehicles: bpy.props.CollectionProperty(type=blocks.Vehicle, name="Vehicle")
 	vehicle_index: bpy.props.IntProperty(name="Vehicle Index", description="Current Vehicle", default=-1)
 
-	buffers: bpy.props.IntVectorProperty(
-		name="buffers",
-		description="Contains all the replay data"
-	)
+	# buffers: bpy.props.StringProperty(name="buffers", description="Contains all the replay data")
 
 	@property
 	def game(self):

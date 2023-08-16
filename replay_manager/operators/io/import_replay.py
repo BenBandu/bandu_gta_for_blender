@@ -1,12 +1,12 @@
 import bpy
-import bpy_extras
+from bpy_extras import io_utils
 import time
 import mathutils
 from ....bandu_gta.files.replay import Replay
 
 
 # noinspection PyPep8Naming
-class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 
 	bl_idname = "replay_manager.import_replay"
 	bl_label = "GTA Replay (.rep)"
@@ -38,7 +38,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		description="Sets the replay offset to the current frame",
 	)
 
-	TIMER_STEP = 0.05
+	TIMER_STEP = 0.01
 
 	def __init__(self):
 		self.timer = None
@@ -51,9 +51,6 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 		self.replay_collection = None
 
 		self.context = None
-
-	def invoke(self, context, event):
-		return super().invoke(context, event)
 
 	def execute(self, context):
 		self.context = context
@@ -76,7 +73,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 			frame = self.replay_data.get_frames()[self.frame_current]
 			bl_index = self.frame_current + self.replay_property.offset
 
-			manager.loading_status = (self.frame_current / self.frame_count - 1) * 100 + 100
+			manager.loading_status = int((self.frame_current / self.frame_count - 1) * 100 + 100)
 			manager.loading_message = F"Frame {self.frame_current}/{self.frame_count}"
 
 			self.handle_general_block(frame, bl_index)
@@ -119,6 +116,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 	def handle_replay_data(self):
 		self.replay_property.name = self.filepath.split("\\")[-1]
 		self.replay_property.version = self.replay_data.get_version()
+		# self.replay_property.buffers = b''.join(self.replay_data.get_buffers())
 		self.create_collection(self.replay_property.name)
 
 		# Max Vehicles in SA (I think), maybe adjust this based on replay version?
@@ -155,7 +153,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 			self.replay_collection.objects.link(camera)
 			general_property.camera = camera
 
-		general_property.camera.matrix_world = self.matrix_bg_to_bl(general_data.camera)
+		general_property.camera.matrix_world = self.matrix_conversion(general_data.camera.transposed())
 		general_property.camera.scale *= -1
 		general_property.camera.keyframe_insert(data_path="location", frame=frame_index)
 		general_property.camera.keyframe_insert(data_path="rotation_euler", frame=frame_index)
@@ -217,8 +215,8 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 					self.replay_collection.objects.link(empty)
 					vehicle_property.target = empty
 
-				matrix = vehicle_data.matrix.decompress()
-				vehicle_property.target.matrix_world = self.matrix_bg_to_bl(matrix)
+				matrix = vehicle_data.matrix.decompress().transposed()
+				vehicle_property.target.matrix_world = self.matrix_conversion(matrix)
 				vehicle_property.target.scale *= -1
 				vehicle_property.target.keyframe_insert(data_path="location",       frame=frame_index)
 				vehicle_property.target.keyframe_insert(data_path="rotation_euler", frame=frame_index)
@@ -255,9 +253,9 @@ class RM_OT_ImportReplay(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 	def is_first_frame(self):
 		return self.frame_current == 0
 
-	def matrix_bg_to_bl(self, camera):
-		matrix = mathutils.Matrix(camera.as_list(True))
-		convert = bpy_extras.io_utils.axis_conversion(from_forward="Z", from_up="-Y", to_forward="Y", to_up="Z").to_4x4()
+	def matrix_conversion(self, matrix):
+		matrix = mathutils.Matrix(matrix.as_list())
+		convert = io_utils.axis_conversion(from_forward="Z", from_up="-Y", to_forward="Y", to_up="Z").to_4x4()
 		final = matrix @ convert
 		final.translation = matrix.to_translation()
 		return final
