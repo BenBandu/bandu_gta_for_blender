@@ -8,7 +8,7 @@ class RM_PT_Replay(bpy.types.Panel):
 	bl_region_type = 'UI'
 	bl_category = 'Replay Manager'
 	bl_idname = "RM_PT_Replay"
-	bl_label = 'Replay Data'
+	bl_label = 'Replay'
 
 	def draw(self, context):
 		replay = context.scene.replay_manager.active_replay
@@ -26,11 +26,15 @@ class RM_PT_Replay(bpy.types.Panel):
 		self.layout.separator()
 
 		row = self.layout.row()
+		row.operator('replay_manager.merge_replay', text="Merge Replay")
+
+		row = self.layout.row()
 		row.prop(replay, "offset")
 
 		self.layout.separator()
 
 		row = self.layout.row()
+		row.scale_y = 2.0
 		row.operator('replay_manager.export_replay', text='Export Replay')
 
 	@classmethod

@@ -80,6 +80,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 			self.handle_clock_block(frame, bl_index)
 			self.handle_weather_block(frame, bl_index)
 			self.handle_vehicle_blocks(frame, bl_index)
+			self.handle_ped_blocks(frame, bl_index)
 
 			if self.is_last_frame():
 				self.finalize()
@@ -119,12 +120,10 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		# self.replay_property.buffers = b''.join(self.replay_data.get_buffers())
 		self.create_collection(self.replay_property.name)
 
-		# Max Vehicles in SA (I think), maybe adjust this based on replay version?
-		for i in range(110):
+		for i in range(Replay.MAX_VEHICLE_COUNT):
 			self.replay_property.vehicles.add()
 
-		# Max Peds in SA (I think), do we even care about peds?
-		for i in range(140):
+		for i in range(Replay.MAX_PED_COUNT):
 			self.replay_property.peds.add()
 
 	def handle_import_settings(self):
@@ -232,9 +231,9 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		if self.is_last_frame():
 			# Once we're at the last frame, go through all vehicles with a target and create a
 			# driver that connects the vehicles enabled property to the targets visibility
-			for bl_vehicle in self.replay_property.vehicles:
-				if bl_vehicle.target:
-					driver = bl_vehicle.target.driver_add("hide_viewport").driver
+			for vehicle_property in self.replay_property.vehicles:
+				if vehicle_property.target:
+					driver = vehicle_property.target.driver_add("hide_viewport").driver
 
 					variable = driver.variables.new()
 					variable.type = "SINGLE_PROP"
@@ -243,7 +242,56 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 					target = variable.targets[0]
 					target.id_type = "SCENE"
 					target.id = self.context.scene
-					target.data_path = bl_vehicle.path_from_id("enabled")
+					target.data_path = vehicle_property.path_from_id("enabled")
+
+					driver.expression = "not enabled"
+
+	def handle_ped_blocks(self, frame, frame_index):
+		for ped_data in frame.get_block(self.replay_data.blocks.ReplayBlock.TYPE_PED, []):
+			ped_property = self.replay_property.peds[ped_data.index]
+			if ped_property is None:
+				continue
+
+			ped_property.index = ped_data.index
+			ped_property.model_id = ped_data.index
+
+			ped_property.keyframe_insert(data_path="index", frame=frame_index)
+			ped_property.keyframe_insert(data_path="model_id", frame=frame_index)
+
+			if not ped_property.target:
+				empty = self.create_empty(F"{self.replay_property.name}.ped.{ped_property.index}")
+				self.replay_collection.objects.link(empty)
+				ped_property.target = empty
+
+			matrix = ped_data.matrix.decompress().transposed()
+			ped_property.target.matrix_world = self.matrix_conversion(matrix)
+			ped_property.target.scale *= -1
+			ped_property.target.keyframe_insert(data_path="location", frame=frame_index)
+			ped_property.target.keyframe_insert(data_path="rotation_euler", frame=frame_index)
+			ped_property.target.keyframe_insert(data_path="scale", frame=frame_index)
+
+			if self.frame_count > frame_index:
+				ped_property.enabled = False
+				ped_property.keyframe_insert(data_path="enabled", frame=frame_index + 1)
+
+			ped_property.enabled = True
+			ped_property.keyframe_insert(data_path="enabled", frame=frame_index)
+
+		if self.is_last_frame():
+			# Once we're at the last frame, go through all peds with a target and create a
+			# driver that connects the vehicles enabled property to the targets visibility
+			for ped_property in self.replay_property.peds:
+				if ped_property.target:
+					driver = ped_property.target.driver_add("hide_viewport").driver
+
+					variable = driver.variables.new()
+					variable.type = "SINGLE_PROP"
+					variable.name = "enabled"
+
+					target = variable.targets[0]
+					target.id_type = "SCENE"
+					target.id = self.context.scene
+					target.data_path = ped_property.path_from_id("enabled")
 
 					driver.expression = "not enabled"
 

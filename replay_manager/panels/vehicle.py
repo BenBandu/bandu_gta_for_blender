@@ -8,12 +8,18 @@ class RM_PT_Vehicle(bpy.types.Panel):
 	bl_category = "Replay Manager"
 	bl_idname = "RM_PT_Vehicle"
 	bl_parent_id = "RM_PT_Replay"
-	bl_label = "Vehicle Data"
+	bl_label = "Vehicles"
+	bl_options = {"DEFAULT_CLOSED"}
 
 	def draw(self, context):
 		manager = context.scene.replay_manager
 		replay = manager.active_replay
 		vehicle = replay.active_vehicle
+
+		self.layout.template_list("RM_UL_VEHICLE_LIST", "vehicle_list", replay, "vehicles", replay, "vehicle_index", rows=2)
+
+		if vehicle is None:
+			return
 
 		row = self.layout.row()
 		row.scale_y = 0.5
@@ -23,7 +29,7 @@ class RM_PT_Vehicle(bpy.types.Panel):
 		self.layout.separator()
 
 		row = self.layout.row()
-		row.prop(replay.general, "target", text="Location", icon="EMPTY_AXIS")
+		row.prop(vehicle, "target", text="Location", icon="EMPTY_AXIS")
 
 		self.layout.separator()
 
@@ -39,8 +45,8 @@ class RM_PT_Vehicle(bpy.types.Panel):
 		if replay is None:
 			return False
 
-		vehicle = replay.active_vehicle
-		if vehicle is None:
-			return False
+		for vehicle in replay.vehicles:
+			if vehicle.enabled:
+				return True
 
-		return True
+		return False

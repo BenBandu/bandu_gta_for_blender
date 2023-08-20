@@ -5,7 +5,16 @@ class Ped(bpy.types.PropertyGroup):
 	groups = []
 	models = []
 
+	target_filter = lambda self, obj: obj.type != "CAMERA"
+
 	enabled: bpy.props.BoolProperty(name="Enabled", description="Is this ped in the current frame?")
+	index: bpy.props.IntProperty(name="Index", description="Ped pool array index")
+
+	target: bpy.props.PointerProperty(
+		type=bpy.types.Object,
+		description="The point that the camera orbits around when playing back the replay in game (Usually the player)",
+		poll=target_filter
+	)
 
 	model_id: bpy.props.IntProperty(name="Model Id", description="Id of the model used for this ped")
 	model_name: bpy.props.EnumProperty(items=models, name="Model", description="The model used for this ped")
@@ -18,11 +27,11 @@ class Ped(bpy.types.PropertyGroup):
 		if self.models:
 			return self.model_name
 
-		return self.model_id
+		return str(self.model_id)
 
 	@property
 	def group(self):
 		if self.groups:
 			return self.group_name
 
-		return self.group_id
+		return str(self.group_id)

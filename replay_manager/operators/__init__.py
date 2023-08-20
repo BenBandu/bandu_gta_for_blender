@@ -1,12 +1,14 @@
 from .io.export_replay import RM_OT_ExportReplay
 from .io.import_replay import RM_OT_ImportReplay
 from .replay.add_frame import RM_OT_AddFrame
+from .replay.merge_replays import RM_OT_MergeReplays
 from .debug.refresh_addon import RM_OT_RefreshAddon
 
 classes = [
 	RM_OT_ExportReplay,
 	RM_OT_ImportReplay,
 	RM_OT_AddFrame,
+	RM_OT_MergeReplays,
 	RM_OT_RefreshAddon,
 ]
 

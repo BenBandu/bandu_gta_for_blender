@@ -9,7 +9,7 @@ class RM_PT_Frame(bpy.types.Panel):
 	bl_category = "Replay Manager"
 	bl_idname = "RM_PT_Frame"
 	bl_parent_id = "RM_PT_Replay"
-	bl_label = "Frame Data"
+	bl_label = "Frame"
 
 	def draw(self, context):
 		manager = context.scene.replay_manager
@@ -40,27 +40,6 @@ class RM_PT_Frame(bpy.types.Panel):
 
 		row = self.layout.row()
 		row.prop(replay.weather, "blend", slider=True)
-
-		enabled_peds = False
-		for ped in replay.peds:
-			if ped.enabled:
-				enabled_peds = True
-				break
-
-		enabled_vehicles = False
-		for vehicle in replay.vehicles:
-			if vehicle.enabled:
-				enabled_vehicles = True
-				break
-
-		if enabled_peds:
-			self.layout.separator()
-			self.layout.template_list("RM_UL_PED_LIST", "ped_list", replay, "peds", replay, "ped_index")
-
-		if enabled_vehicles:
-			self.layout.separator()
-			self.layout.label(text="Vehicles")
-			self.layout.template_list("RM_UL_VEHICLE_LIST", "vehicle_list", replay, "vehicles", replay, "vehicle_index")
 
 	def multiline_label(self, context, text):
 		wrapper = textwrap.TextWrapper(context.region.width // 7)
