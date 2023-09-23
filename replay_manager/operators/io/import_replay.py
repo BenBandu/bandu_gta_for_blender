@@ -67,10 +67,11 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 			return {"RUNNING_MODAL"}
 
 		manager = self.context.scene.replay_manager
+		frames = self.replay_data.get_frames()
 
 		start = time.time()
 		while time.time() - start < self.TIMER_STEP:
-			frame = self.replay_data.get_frames()[self.frame_current]
+			frame = frames[self.frame_current]
 			bl_index = self.frame_current + self.replay_property.offset
 
 			manager.loading_status = int((self.frame_current / self.frame_count - 1) * 100 + 100)
@@ -115,6 +116,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		self.context.area.tag_redraw()
 
 	def handle_replay_data(self):
+		self.replay_property.filepath = self.filepath
 		self.replay_property.name = self.filepath.split("\\")[-1]
 		self.replay_property.version = self.replay_data.get_version()
 		# self.replay_property.buffers = b''.join(self.replay_data.get_buffers())

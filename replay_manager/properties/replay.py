@@ -7,6 +7,7 @@ class Replay(bpy.types.PropertyGroup):
 	# INFO #
 	name: bpy.props.StringProperty(name="Name", description="Name of the replay", default="replay")
 	version: bpy.props.IntProperty(name="Version", description="Game ID")
+	filepath: bpy.props.StringProperty(name="Filepath", description="Path to replay file")
 
 	# BLENDER SETTINGS #
 	offset: bpy.props.IntProperty(name="Offset", description="Offset the entire replay in the timeline")
