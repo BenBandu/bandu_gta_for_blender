@@ -41,6 +41,8 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 		if event.type != "TIMER":
 			return {"RUNNING_MODAL"}
 
+		tmp_frame = self.context.scene.frame_current
+
 		manager = self.context.scene.replay_manager
 		frames = self.replay_data.get_frames()
 		self.frame_count = len(frames)
@@ -60,6 +62,8 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 				return {"FINISHED"}
 			else:
 				self.frame_current += 1
+
+		self.context.scene.frame_set(tmp_frame)
 
 		return {"RUNNING_MODAL"}
 
@@ -110,8 +114,6 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 		camera_data.location.y = matrix[3][1]
 		camera_data.location.z = matrix[3][2]
 		camera_data.location.w = matrix[3][3]
-
-		print(matrix)
 
 		return camera_data
 
