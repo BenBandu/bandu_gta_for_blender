@@ -52,10 +52,12 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 			frame = frames[self.frame_current]
 			self.context.scene.frame_set(self.frame_current + self.replay_property.offset)
 
-			manager.loading_status = int((self.frame_current / self.frame_count - 1) * 100 + 100)
+			manager.loading_status = (self.frame_current // self.frame_count - 1) * 100 + 100
 			manager.loading_message = F"Frame {self.frame_current}/{self.frame_count}"
 
-			self.handle_general_block(frame)
+			self.handle_general_block(self.replay_property.general, frame.get_block(self.replay_block.TYPE_GENERAL))
+			self.handle_clock_block(self.replay_property.clock, frame.get_block(self.replay_block.TYPE_CLOCK))
+			self.handle_weather_blocK(self.replay_property.weather, frame.get_block(self.replay_block.TYPE_WEATHER))
 
 			if self.is_last_frame():
 				self.finalize()
@@ -69,19 +71,35 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 
 	def initialize(self):
 		manager = self.context.scene.replay_manager
+
+		manager.is_exporting = True
+		manager.loading_status = 0
+		manager.loading_message = F"Saving replay data"
+
 		self.replay_property = manager.active_replay
 		self.replay_data = Replay.create_from_file(self.replay_property.filepath)
 		self.replay_block = self.replay_data.blocks.ReplayBlock
 
 	def finalize(self):
+		self.context.scene.replay_manager.is_exporting = False
 		self.replay_data.save(self.filepath)
 
-	def handle_general_block(self, frame):
-		general_property = self.replay_property.general
-		general_data = frame.get_block(self.replay_block.TYPE_GENERAL)
-		general_data.matrix = self.matrix_conversion(general_property.camera, general_data.camera)
+	def handle_general_block(self, prop, data):
+		matrix = self.matrix_conversion(prop.camera)
+		for i in range(4):
+			for j in range(4):
+				data.camera[i][j] = matrix[i][j]
 
-	def matrix_conversion(self, camera_property, camera_data):
+	def handle_clock_block(self, prop, data):
+		data.hours = (prop.time_of_day // 60) % 24
+		data.minutes = (prop.time_of_day % 60)
+
+	def handle_weather_blocK(self, prop, data):
+		data.new = int(prop.new)
+		data.old = int(prop.old)
+		data.blend = prop.blend
+
+	def matrix_conversion(self, camera_property):
 		depsgraph = self.context.evaluated_depsgraph_get()
 		camera_property = camera_property.evaluated_get(depsgraph)
 
@@ -94,28 +112,7 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 		matrix = mathutils.Matrix.LocRotScale(loc, rot, scale)
 		matrix.transpose()
 
-
-		camera_data.right.x = matrix[0][0]
-		camera_data.right.y = matrix[0][1]
-		camera_data.right.z = matrix[0][2]
-		camera_data.right.w = matrix[0][3]
-
-		camera_data.forward.x = matrix[1][0]
-		camera_data.forward.y = matrix[1][1]
-		camera_data.forward.z = matrix[1][2]
-		camera_data.forward.w = matrix[1][3]
-
-		camera_data.up.x = matrix[2][0]
-		camera_data.up.y = matrix[2][1]
-		camera_data.up.z = matrix[2][2]
-		camera_data.up.w = matrix[2][3]
-
-		camera_data.location.x = matrix[3][0]
-		camera_data.location.y = matrix[3][1]
-		camera_data.location.z = matrix[3][2]
-		camera_data.location.w = matrix[3][3]
-
-		return camera_data
+		return matrix
 
 	def is_last_frame(self):
 		return self.frame_current == self.frame_count - 1

@@ -11,7 +11,8 @@ class RM_PT_Replay(bpy.types.Panel):
 	bl_label = 'Replay'
 
 	def draw(self, context):
-		replay = context.scene.replay_manager.active_replay
+		manager = context.scene.replay_manager
+		replay = manager.active_replay
 
 		row = self.layout.row()
 		row.scale_y = 0.5
@@ -35,7 +36,10 @@ class RM_PT_Replay(bpy.types.Panel):
 
 		row = self.layout.row()
 		row.scale_y = 2.0
-		row.operator('replay_manager.export_replay', text='Export Replay')
+		if manager.is_exporting:
+			row.prop(manager, "loading_status", text=F"{manager.loading_message}", slider=True)
+		else:
+			row.operator('replay_manager.export_replay', text='Export Replay')
 
 	@classmethod
 	def poll(cls, context):

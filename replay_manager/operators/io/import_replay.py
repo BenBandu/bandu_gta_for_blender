@@ -38,6 +38,18 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		description="Sets the replay offset to the current frame",
 	)
 
+	import_vehicles: bpy.props.BoolProperty(
+		default=False,
+		name="Import Vehicles",
+		description="Import location of vehicles",
+	)
+
+	import_peds: bpy.props.BoolProperty(
+		default=False,
+		name="Import Pedestrians",
+		description="Import location of pedestrians",
+	)
+
 	TIMER_STEP = 0.01
 
 	def __init__(self):
@@ -74,7 +86,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 			frame = frames[self.frame_current]
 			bl_index = self.frame_current + self.replay_property.offset
 
-			manager.loading_status = int((self.frame_current / self.frame_count - 1) * 100 + 100)
+			manager.loading_status = (self.frame_current // self.frame_count - 1) * 100 + 100
 			manager.loading_message = F"Frame {self.frame_current}/{self.frame_count}"
 
 			self.handle_general_block(frame, bl_index)
@@ -93,7 +105,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 
 	def initialize(self):
 		manager = self.context.scene.replay_manager
-		manager.is_loading = True
+		manager.is_importing = True
 		manager.loading_status = 0
 		manager.loading_message = F"Loading replay data"
 
@@ -112,7 +124,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		self.handle_import_settings()
 
 	def finalize(self):
-		self.context.scene.replay_manager.is_loading = False
+		self.context.scene.replay_manager.is_importing = False
 		self.context.area.tag_redraw()
 
 	def handle_replay_data(self):
@@ -191,6 +203,9 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		weather_property.keyframe_insert(data_path="blend", frame=frame_index)
 
 	def handle_vehicle_blocks(self, frame, frame_index):
+		if not self.import_vehicles:
+			return
+
 		for vehicle_block in self.replay_block.get_vehicles_types():
 			vehicle_blocks = frame.get_block(vehicle_block)
 			if vehicle_blocks is None:
@@ -249,6 +264,9 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 					driver.expression = "not enabled"
 
 	def handle_ped_blocks(self, frame, frame_index):
+		if not self.import_peds:
+			return
+
 		for ped_data in frame.get_block(self.replay_data.blocks.ReplayBlock.TYPE_PED, []):
 			ped_property = self.replay_property.peds[ped_data.index]
 			if ped_property is None:

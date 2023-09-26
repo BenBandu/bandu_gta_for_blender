@@ -4,7 +4,8 @@ from .replay import Replay
 
 class Manager(bpy.types.PropertyGroup):
 
-	is_loading: bpy.props.BoolProperty(name="Is importing", description="")
+	is_importing: bpy.props.BoolProperty(name="Importing", description="")
+	is_exporting: bpy.props.BoolProperty(name="Exporting", description="")
 	loading_status: bpy.props.IntProperty(name="progress", description="", subtype="PERCENTAGE", min=0, max=100)
 	loading_message: bpy.props.StringProperty(name="message", description="")
 
