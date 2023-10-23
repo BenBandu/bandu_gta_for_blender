@@ -41,6 +41,17 @@ class RM_PT_Frame(bpy.types.Panel):
 		row = self.layout.row()
 		row.prop(replay.weather, "blend", slider=True)
 
+		self.layout.separator()
+
+		row = self.layout.row()
+		row.prop(replay.freeplay, "enabled", text="Enable Freeplay data")
+
+		column = self.layout.column()
+		column.enabled = replay.freeplay.enabled
+
+		row = column.row()
+		row.prop(replay.freeplay, "fov", text="Field of View")
+
 	def multiline_label(self, context, text):
 		wrapper = textwrap.TextWrapper(context.region.width // 7)
 		lines = wrapper.wrap(text)

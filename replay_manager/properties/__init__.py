@@ -9,6 +9,7 @@ classes = [
 	Weather,
 	Ped,
 	Vehicle,
+	Freeplay,
 	Replay,
 	Manager
 ]

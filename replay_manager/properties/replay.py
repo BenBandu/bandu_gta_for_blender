@@ -17,6 +17,9 @@ class Replay(bpy.types.PropertyGroup):
 	clock: bpy.props.PointerProperty(type=blocks.Clock, name="Clock")
 	weather: bpy.props.PointerProperty(type=blocks.Weather, name="Weather")
 
+	# FREEPLAY DATA #
+	freeplay: bpy.props.PointerProperty(type=blocks.Freeplay, name="Freeplay")
+
 	# PEDS #
 	peds: bpy.props.CollectionProperty(type=blocks.Ped, name="Ped")
 	ped_index: bpy.props.IntProperty(name="Ped Index", description="Current Ped", default=-1)

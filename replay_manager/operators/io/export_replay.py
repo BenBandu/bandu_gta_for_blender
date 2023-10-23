@@ -57,7 +57,8 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 
 			self.handle_general_block(self.replay_property.general, frame.get_block(self.replay_block.TYPE_GENERAL))
 			self.handle_clock_block(self.replay_property.clock, frame.get_block(self.replay_block.TYPE_CLOCK))
-			self.handle_weather_blocK(self.replay_property.weather, frame.get_block(self.replay_block.TYPE_WEATHER))
+			self.handle_weather_block(self.replay_property.weather, frame.get_block(self.replay_block.TYPE_WEATHER))
+			self.handle_freeplay_block(self.replay_property.freeplay, frame.get_block(self.replay_block.TYPE_FREEPLAY))
 
 			if self.is_last_frame():
 				self.finalize()
@@ -78,7 +79,7 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 
 		self.replay_property = manager.active_replay
 		self.replay_data = Replay.create_from_file(self.replay_property.filepath)
-		self.replay_block = self.replay_data.blocks.ReplayBlock
+		self.replay_block = self.replay_data._block
 
 	def finalize(self):
 		self.context.scene.replay_manager.is_exporting = False
@@ -94,10 +95,21 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 		data.hours = (prop.time_of_day // 60) % 24
 		data.minutes = (prop.time_of_day % 60)
 
-	def handle_weather_blocK(self, prop, data):
+	def handle_weather_block(self, prop, data):
 		data.new = int(prop.new)
 		data.old = int(prop.old)
 		data.blend = prop.blend
+
+	def handle_freeplay_block(self, prop, data):
+		if not self.replay_property.freeplay.enabled:
+			return
+
+		if data is None:
+			data = self.replay_block.create_from_type(self.replay_block.TYPE_FREEPLAY)
+			self.replay_data.get_frame(self.frame_current).set_block(data)
+			self.replay_data.set_dirty()
+
+		data.fov = prop.fov
 
 	def matrix_conversion(self, camera_property):
 		depsgraph = self.context.evaluated_depsgraph_get()

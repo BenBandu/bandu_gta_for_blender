@@ -26,7 +26,7 @@ bpy.ops.wm.recover_last_session()
 		return {"FINISHED"}
 
 	def update_directory(self):
-		to_path = 'C:\\Users\\Simon\\AppData\\Roaming\\Blender Foundation\\Blender\\3.6\\scripts\\addons\\bandu_gta_for_blender\\'
+		to_path = 'F:\\Users\\AppData\\Roaming\\Blender Foundation\\Blender\\3.6\\scripts\\addons\\bandu_gta_for_blender\\'
 		from_path = 'K:\\Dev\\bandu-gta-for-blender\\'
 
 		if os.path.exists(to_path):
