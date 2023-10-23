@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import math
 import time
 from bpy_extras import io_utils
 from ....bandu_gta.files.replay import Replay
@@ -79,7 +80,7 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 
 		self.replay_property = manager.active_replay
 		self.replay_data = Replay.create_from_file(self.replay_property.filepath)
-		self.replay_block = self.replay_data._block
+		self.replay_block = self.replay_data.replay_block
 
 	def finalize(self):
 		self.context.scene.replay_manager.is_exporting = False
@@ -109,7 +110,7 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 			self.replay_data.get_frame(self.frame_current).set_block(data)
 			self.replay_data.set_dirty()
 
-		data.fov = prop.fov
+		data.fov = math.degrees(prop.fov)
 
 	def matrix_conversion(self, camera_property):
 		depsgraph = self.context.evaluated_depsgraph_get()

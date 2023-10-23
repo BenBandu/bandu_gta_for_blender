@@ -114,7 +114,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 
 		# Read file
 		self.replay_data = Replay.create_from_file(self.filepath)
-		self.replay_block = self.replay_data._block
+		self.replay_block = self.replay_data.replay_block
 		self.frame_count = len(self.replay_data.get_frames())
 
 		self.replay_property = manager.replays.add()
@@ -267,7 +267,7 @@ class RM_OT_ImportReplay(bpy.types.Operator, io_utils.ImportHelper):
 		if not self.import_peds:
 			return
 
-		for ped_data in frame.get_block(self.replay_data._block.TYPE_PED, []):
+		for ped_data in frame.get_block(self.replay_data.replay_block.TYPE_PED, []):
 			ped_property = self.replay_property.peds[ped_data.index]
 			if ped_property is None:
 				continue
