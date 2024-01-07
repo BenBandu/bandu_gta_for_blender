@@ -125,7 +125,7 @@ class RM_OT_ExportReplay(bpy.types.Operator, io_utils.ExportHelper):
 		matrix = mathutils.Matrix.LocRotScale(loc, rot, scale)
 		matrix.transpose()
 
-		return matrix
+		return matrix.normalized()
 
 	def is_last_frame(self):
 		return self.frame_current == self.frame_count - 1
